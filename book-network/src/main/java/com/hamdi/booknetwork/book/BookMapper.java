@@ -1,5 +1,7 @@
 package com.hamdi.booknetwork.book;
 
+import com.hamdi.booknetwork.file.FileUtils;
+import com.hamdi.booknetwork.history.BookTransactionHistory;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,6 +28,19 @@ public class BookMapper {
                 .archived(book.isArchived())
                 .shareable(book.isShareable())
                 .owner(book.getOwner().fullname())
+                .cover(FileUtils.readFileFromLocation(book.getBookCover()))
+                .build();
+    }
+
+    public BorrowedBooksResponse toBorrowedBooksResponse(BookTransactionHistory history) {
+        return BorrowedBooksResponse.builder()
+                .id(history.getBook().getId())
+                .title(history.getBook().getTitle())
+                .authorName(history.getBook().getAuthorName())
+                .isbn(history.getBook().getIsbn())
+                .rate(history.getBook().getRate())
+                .returned(history.isReturned())
+                .returnApproved(history.isReturnApproved())
                 //.cover()
                 .build();
     }
