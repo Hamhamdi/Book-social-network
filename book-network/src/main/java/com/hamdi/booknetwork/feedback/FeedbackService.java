@@ -2,13 +2,18 @@ package com.hamdi.booknetwork.feedback;
 
 import com.hamdi.booknetwork.book.Book;
 import com.hamdi.booknetwork.book.BookRepository;
+import com.hamdi.booknetwork.common.PageResponse;
 import com.hamdi.booknetwork.exception.OperationNotPermittedException;
 import com.hamdi.booknetwork.user.User;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Objects;
 
 @Service
@@ -16,6 +21,8 @@ import java.util.Objects;
 public class FeedbackService {
 
     private final BookRepository bookRepository;
+    private final FeedbackMapper feedbackMapper;
+    private final FeedbackRepository feedbackRepository;
     public Integer save(FeedbackRequest request, Authentication connectedUser) {
         Book book = bookRepository.findById(request.bookId())
                 .orElseThrow(() -> new EntityNotFoundException("No book found with the ID:: "+ request.bookId()));
@@ -26,9 +33,29 @@ public class FeedbackService {
 
         User user = ((User) connectedUser.getPrincipal() );
         if (Objects.equals(book.getOwner().getId(), user.getId())){
-            // throw an exception cannot borrow my own book
-            throw new OperationNotPermittedException("You cannot borrow or return your own book");
+            throw new OperationNotPermittedException("You cannot give a feedback to your own book !");
         }
-        return null;
+            Feedback feedback = feedbackMapper.toFeedback(request);
+
+        return feedbackRepository.save(feedback).getId();
+    }
+
+    public PageResponse<FeedbackResponse> findAllFeedbacksByBook(Integer bookId, int page, int size, Authentication connectedUser) {
+        Pageable pageable = PageRequest.of(page, size);
+        User user = ((User) connectedUser.getPrincipal());
+        Page<Feedback> feedbacks = feedbackRepository.findAllByBookId(bookId, pageable);
+        List<FeedbackResponse> feedbackResponses = feedbacks.stream()
+                .map(f -> feedbackMapper.toFeedbackResponse(f, user.getId()))
+                .toList();
+
+        return new PageResponse<>(
+                feedbackResponses,
+                feedbacks.getNumber(),
+                feedbacks.getSize(),
+                feedbacks.getTotalElements(),
+                feedbacks.getTotalPages(),
+                feedbacks.isFirst(),
+                feedbacks.isLast()
+        );
     }
 }
