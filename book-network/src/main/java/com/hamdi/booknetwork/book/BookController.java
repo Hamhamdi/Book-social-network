@@ -5,6 +5,7 @@ import com.hamdi.booknetwork.common.PageResponse;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -109,7 +110,9 @@ public class BookController {
             @Parameter()
             @RequestPart("file") MultipartFile file,
             Authentication connectedUser ){
+
         bookService.uploadBookCoverPicture(file,connectedUser,bookId);
+        return ResponseEntity.accepted().build();
 
     }
 
